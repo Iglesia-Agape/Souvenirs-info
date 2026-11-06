@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Souvenirs - Info</title>
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-180.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1c2b4a">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        :root {
+            /* Identidad oficial Ágape */
+            --azul: #2a3d68;
+            --azul-deep: #1c2b4a;
+            --gris: #6a757d;
+            --gris-claro: #d7dde0;
+            --aqua: #b8e8e8;
+            --aqua-deep: #2f9c9f;
+            --naranja: #e8792c;
+            --naranja-deep: #c25f18;
+
+            /* Base de la interfaz */
+            --ink: #22293a;
+            --ink-soft: var(--gris);
+            --parchment: #eaf6f7;
+            --card: #ffffff;
+            --line: #dbe6e7;
+
+            /* Categorías (sellos por producto) */
+            --cat-lectura: var(--azul);
+            --cat-accesorios: var(--naranja);
+            --cat-papeleria: var(--gris);
+            --cat-hogar: var(--aqua-deep);
+            --cat-general: var(--gris);
+
+            --danger: #b3422f;
+            --danger-bg: #fbeae6;
+            --ok: #2f7a5c;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--parchment);
+            color: var(--ink);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .font-display { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; font-weight: 800; }
+        .font-data { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; font-variant-numeric: tabular-nums; }
+ 
+        .topbar {
+            background: var(--azul-deep);
+            color: #eef4f6;
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            border-bottom: 3px solid var(--naranja);
+        }
+        .topbar h1 { font-size: 1.4rem; margin: 0; font-weight: 600; letter-spacing: 0.01em; }
+        .topbar .subtitulo-marca { font-size: 0.72rem; margin: 1px 0 0; color: rgba(238,244,246,0.6); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+        .brand { display: flex; align-items: center; gap: 13px; }
+        .brand-mark {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            background: var(--azul);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: var(--card);
+            flex-shrink: 0;
+            box-shadow: inset 0 0 0 2px var(--aqua);
+            overflow: hidden;
+            padding: 7px;
+        }
+        .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
+        .topbar-actions { display: flex; align-items: center; gap: 10px; }
+        .status-pill {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.82rem; font-weight: 600;
+            padding: 7px 14px; border-radius: 999px;
+            background: rgba(255,255,255,0.08);
+            white-space: nowrap;
+        }
+        .status-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        .status-dot.ok { background: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,0.25); }
+        .status-dot.warn { background: #facc15; box-shadow: 0 0 0 3px rgba(250,204,21,0.25); animation: pulse 1.4s infinite; }
+        .status-dot.err { background: #f87171; box-shadow: 0 0 0 3px rgba(248,113,113,0.25); }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+ 
+        .btn-admin {
+            background: rgba(255,255,255,0.1);
+            color: #eef4f6;
+            border: 1px solid rgba(255,255,255,0.2);
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 7px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .btn-admin:hover { background: rgba(255,255,255,0.18); }
+ 
+        main {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 28px 20px 60px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+        @media (min-width: 1024px) {
+            main { grid-template-columns: 1.6fr 1fr; align-items: start; }
+        }
+ 
+        .panel-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; }
+        .panel-head h2 { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif; font-size: 1.3rem; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .pill-soft {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.78rem; color: var(--ink-soft);
+            background: var(--card); border: 1px solid var(--line);
+            padding: 5px 12px; border-radius: 8px; font-weight: 500;
+        }
+
+        .search-box { width: 100%; margin-bottom: 0; position: relative; }
+        .search-box input {
+            width: 100%; padding: 12px 16px 12px 40px;
+            border: 1px solid var(--line); border-radius: 10px;
+            font-size: 0.95rem; font-family: inherit;
+            background: var(--card); color: var(--ink);
+        }
+        .search-box input:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px rgba(42,61,104,0.12); }
+        .search-box svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); pointer-events: none; }
+
+        #categoria-chips { display: flex; gap: 8px; margin: 14px 0 18px; flex-wrap: wrap; }
+        .chip-categoria {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.8rem; font-weight: 700;
+            padding: 7px 14px; border-radius: 999px;
+            background: var(--card); color: var(--ink-soft);
+            border: 1px solid var(--line);
+            cursor: pointer; display: flex; align-items: center; gap: 6px;
+            transition: background 0.12s, color 0.12s, border-color 0.12s;
+            white-space: nowrap;
+        }
+        .chip-categoria .punto { width: 8px; height: 8px; border-radius: 50%; background: var(--chip-color, var(--ink-soft)); flex-shrink: 0; }
+        .chip-categoria:hover { border-color: var(--chip-color, var(--line)); color: var(--ink); }
+        .chip-categoria.activo { background: var(--ink); border-color: var(--ink); color: #fff; }
+        .chip-categoria.activo .punto { background: #fff; }
+
+        #grid-productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 18px; }
+
+        .prod-card {
+            background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--cat-color, var(--line));
+            border-radius: 14px;
+            padding: 20px 20px 18px; display: flex; flex-direction: column; justify-content: space-between;
+            transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+            position: relative;
+            min-height: 168px;
+        }
+        .prod-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(43,32,51,0.1); }
+        .prod-card.agotado { opacity: 0.5; }
+        .prod-sello {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif; font-size: 0.66rem; font-weight: 700;
+            letter-spacing: 0.05em; text-transform: uppercase;
+            color: var(--cat-color, var(--ink-soft));
+            margin-bottom: 10px;
+        }
+        .prod-sello .punto { width: 7px; height: 7px; border-radius: 50%; background: var(--cat-color, var(--ink-soft)); }
+        .prod-name { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif; font-weight: 600; font-size: 1.18rem; margin: 0 0 6px; line-height: 1.25; padding-right: 26px; }
+        .prod-stock { font-size: 0.8rem; color: var(--ink-soft); margin: 0; font-weight: 500; }
+        .prod-stock.low { color: var(--danger); font-weight: 700; }
+        .prod-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; gap: 8px; }
+        .prod-price { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--azul-deep); }
+        .btn-add {
+            background: var(--azul); color: white; border: none;
+            font-weight: 700; font-size: 0.85rem; padding: 10px 18px; border-radius: 9px;
+            cursor: pointer; transition: background 0.12s, transform 0.06s; white-space: nowrap;
+        }
+        .btn-add:hover { background: var(--azul-deep); }
+        .btn-add:active { transform: scale(0.96); }
+        .btn-add:disabled { background: #cfcabd; cursor: not-allowed; }
+
+        .btn-edit-prod {
+            position: absolute;
+            top: 16px; right: 16px;
+            background: transparent;
+            border: none;
+            color: var(--ink-soft);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-edit-prod:hover { background: var(--line); color: var(--ink); }
+        body.modo-admin .btn-edit-prod { display: flex; }
+
+        .state-card {
+            grid-column: 1 / -1; background: var(--card); border: 1px solid var(--line);
+            border-radius: 14px; padding: 40px 24px; text-align: center;
+        }
+        .state-card .icon { font-size: 2.2rem; display: block; margin-bottom: 10px; }
+        .state-card p.title { font-weight: 700; margin: 0 0 4px; }
+        .state-card p.sub { font-size: 0.85rem; color: var(--ink-soft); margin: 0; }
+        .state-card.is-error { border-color: #e3b5a8; background: var(--danger-bg); }
+        .state-card.is-error p.title { color: var(--danger); }
+        .state-card.is-error p.sub { color: #8a4332; }
+        .btn-retry {
+            margin-top: 14px; background: var(--danger); color: white; border: none;
+            font-weight: 700; font-size: 0.85rem; padding: 9px 18px; border-radius: 9px; cursor: pointer;
+        }
+        .btn-retry:hover { background: #93372a; }
+ 
+        .spinner {
+            width: 30px; height: 30px; border: 3px solid var(--line);
+            border-top-color: var(--azul); border-radius: 50%; margin: 0 auto 12px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+ 
+        .cart-panel {
+            background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--naranja);
+            border-radius: 16px;
+            padding: 22px; position: sticky; top: 20px;
+            display: flex; flex-direction: column; max-height: calc(100vh - 40px);
+        }
+        .cart-panel h2 {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif; font-size: 1.3rem; font-weight: 600; margin: 0 0 16px; padding-bottom: 14px;
+            border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px;
+        }
+        #carrito-items { flex: 1; overflow-y: auto; min-height: 140px; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
+        .cart-empty { text-align: center; padding: 30px 10px; color: var(--ink-soft); }
+        .cart-empty .icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+        .cart-empty p { margin: 2px 0; font-size: 0.85rem; }
+ 
+        .cart-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--parchment); border: 1px solid var(--line);
+            padding: 10px 12px; border-radius: 10px; gap: 8px;
+        }
+        .cart-item-info { flex: 1; min-width: 0; }
+        .cart-item-info h4 { font-size: 0.88rem; font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cart-item-info span { font-size: 0.75rem; color: var(--naranja-deep); font-weight: 600; }
+        .qty-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .qty-btn {
+            width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line);
+            background: white; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 0.95rem; color: var(--ink);
+        }
+        .qty-btn:hover { background: var(--line); }
+        .qty-val { font-weight: 700; font-size: 0.88rem; width: 22px; text-align: center; }
+ 
+        .cart-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+        .cart-total-row { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; margin-bottom: 16px; }
+        .cart-total-row span:first-child { font-size: 1rem; color: var(--ink); }
+        .cart-total-row span:last-child { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif; font-size: 1.6rem; color: var(--azul-deep); }
+        .btn-pagar {
+            width: 100%; background: var(--naranja); color: #2a1f00;
+            font-size: 1.05rem; font-weight: 800; padding: 15px; border: none; border-radius: 12px;
+            cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;
+            transition: background 0.12s, transform 0.06s;
+        }
+        .btn-pagar:hover:not(:disabled) { background: var(--naranja-deep); color: white; }
+        .btn-pagar:active:not(:disabled) { transform: scale(0.98); }
+        .btn-pagar:disabled { background: #ddd6c4; color: #9b9484; cursor: not-allowed; }
+        .btn-clear {
+            width: 100%; background: transparent; border: none; color: var(--ink-soft);
+            font-size: 0.8rem; font-weight: 600; padding: 10px; margin-top: 6px; cursor: pointer; text-decoration: underline;
+        }
+        .btn-clear:hover { color: var(--danger); }
+ 
+        #toast-container {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 999;
+            display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 420px;
+        }
+        .toast {
+            padding: 14px 18px; border-radius: 12px; font-weight: 600; font-size: 0.9rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18); display: flex; align-items: center; gap: 10px;
+            animation: toast-in 0.25s ease-out;
+        }
+        @keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .toast.success { background: var(--ok); color: white; }
+        .toast.error { background: var(--danger); color: white; }
+        .toast.info { background: var(--azul-deep); color: white; }
+ 
+        /* ---------- Modales ---------- */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(28,43,74,0.55);
+            display: none;
+            align-items: center; justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-box {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 26px;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal-box.wide { max-width: 460px; }
+        .modal-box h3 {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            margin: 0 0 6px;
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .modal-box p.modal-sub { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 18px; }
+        .field-group { margin-bottom: 14px; }
+        .field-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--ink-soft);
+        }
+        .field-group input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+        .field-group input:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px rgba(42,61,104,0.12); }
+        .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+        .btn-modal {
+            flex: 1;
+            padding: 11px;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-modal.primary { background: var(--azul); color: white; }
+        .btn-modal.primary:hover { background: var(--azul-deep); }
+        .btn-modal.danger { background: var(--danger); color: white; }
+        .btn-modal.danger:hover { background: #93372a; }
+        .btn-modal.ghost { background: var(--parchment); color: var(--ink-soft); }
+        .btn-modal.ghost:hover { background: var(--line); }
+        .modal-error {
+            background: var(--danger-bg);
+            color: var(--danger);
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 9px 12px;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            display: none;
+        }
+        .modal-error.visible { display: block; }
+        .modal-close-x {
+            position: absolute;
+            top: 18px; right: 18px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--ink-soft);
+            font-size: 1.1rem;
+        }
+        .modal-box { position: relative; }
+
+        /* ---------- Escáner de código de barras ---------- */
+        .search-row { display: flex; gap: 10px; margin-bottom: 16px; }
+        .search-row .search-box { margin-bottom: 0; flex: 1; }
+        .btn-scan {
+            background: var(--azul); color: white; border: none;
+            font-weight: 700; font-size: 0.85rem; padding: 0 16px; border-radius: 10px;
+            cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+        }
+        .btn-scan:hover { background: var(--azul-deep); }
+        #lector-camara { width: 100%; border-radius: 12px; overflow: hidden; background: #000; min-height: 180px; }
+        .scanner-hint { text-align: center; font-size: 0.8rem; color: var(--ink-soft); margin-top: 10px; }
+        .scanner-status { text-align: center; font-size: 0.88rem; font-weight: 700; margin-top: 10px; min-height: 20px; }
+        .scanner-status.found { color: var(--ok); }
+        .scanner-status.notfound { color: var(--danger); }
+
+        .codigo-row { display: flex; gap: 8px; align-items: center; }
+        .codigo-row .field-group { flex: 1; margin-bottom: 0; }
+        .btn-icon-small {
+            background: var(--parchment); border: 1px solid var(--line); color: var(--ink);
+            border-radius: 9px; padding: 11px 12px; cursor: pointer; font-size: 0.9rem; white-space: nowrap;
+        }
+        .btn-icon-small:hover { background: var(--line); }
+        .etiqueta-preview {
+            text-align: center; margin-top: 12px; padding: 14px;
+            background: var(--parchment); border-radius: 10px; border: 1px dashed var(--line);
+        }
+        .prod-barcode { font-size: 0.72rem; color: var(--ink-soft); margin: 2px 0 0; font-family: monospace; }
+
+        /* ---------- Reportes (más vendidos, stock bajo, exportar) ---------- */
+        .modal-box.reportes { max-width: 520px; max-height: 85vh; overflow-y: auto; }
+        .reporte-seccion { margin-bottom: 22px; }
+        .reporte-seccion:last-child { margin-bottom: 0; }
+        .reporte-titulo {
+            font-size: 0.95rem; font-weight: 700; margin: 0 0 10px;
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        .tabs-periodo { display: flex; gap: 6px; }
+        .tab-periodo {
+            background: var(--parchment); border: 1px solid var(--line); color: var(--ink-soft);
+            border-radius: 8px; padding: 6px 12px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+        }
+        .tab-periodo.activo { background: var(--azul); border-color: var(--azul); color: white; }
+        .lista-reporte { display: flex; flex-direction: column; gap: 6px; }
+        .fila-reporte {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--parchment); border-radius: 8px; padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+        .fila-reporte .rank { font-weight: 800; color: var(--naranja); width: 22px; flex-shrink: 0; }
+        .fila-reporte .nombre-reporte { flex: 1; font-weight: 600; }
+        .fila-reporte .valor-reporte { font-weight: 700; color: var(--azul); white-space: nowrap; }
+        .fila-reporte .valor-reporte.bajo { color: var(--naranja-deep); }
+        .fila-reporte .valor-reporte.agotado { color: var(--danger); }
+        .reporte-vacio { font-size: 0.85rem; color: var(--ink-soft); padding: 10px 2px; margin: 0; }
+        .btn-exportar {
+            width: 100%; background: var(--ok); color: white; border: none;
+            border-radius: 10px; padding: 12px; font-weight: 700; font-size: 0.9rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-exportar:hover { opacity: 0.9; }
+        .separador-reporte { border: none; border-top: 1px solid var(--line); margin: 18px 0; }
+        .resumen-reporte { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+        .resumen-item { background: var(--azul); color: #fff; border-radius: 10px; padding: 10px 6px; text-align: center; }
+        .resumen-item .n { font-size: 1.05rem; font-weight: 800; }
+        .resumen-item .l { font-size: 0.66rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+        /* ---------- Select de categoría ---------- */
+        .field-group select {
+            width: 100%; padding: 11px 14px;
+            border: 1px solid var(--line); border-radius: 9px;
+            font-size: 0.95rem; font-family: inherit;
+            background: #fff; color: var(--ink);
+        }
+        .field-group select:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px rgba(42,61,104,0.12); }
+
+        /* ---------- Aviso sin conexión ---------- */
+        .banner-offline {
+            display: none;
+            background: #fff4e5; border: 1px solid #f1c68b; color: #7a4a0c;
+            border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;
+            font-size: 0.85rem; font-weight: 600;
+        }
+        .banner-offline.visible { display: block; }
+
+        /* ---------- Cobro (monto recibido y cambio) ---------- */
+        .cobro-total { text-align: center; margin: 4px 0 16px; }
+        .cobro-total .etiqueta { font-size: 0.8rem; color: var(--ink-soft); font-weight: 600; }
+        .cobro-total .monto { font-size: 2.2rem; font-weight: 800; color: var(--azul-deep); }
+        .cobro-rapidos { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .btn-rapido {
+            background: var(--parchment); border: 1px solid var(--line); color: var(--ink);
+            border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+        }
+        .btn-rapido:hover { background: var(--line); }
+        .cobro-cambio {
+            display: flex; justify-content: space-between; align-items: baseline;
+            background: var(--parchment); border-radius: 10px; padding: 12px 14px; margin-top: 14px; font-weight: 700;
+        }
+        .cobro-cambio .valor { font-size: 1.5rem; color: var(--ok); }
+        .cobro-cambio.falta .valor { color: var(--danger); }
+        .cobro-resultado { text-align: center; }
+        .cobro-resultado .icono { font-size: 2.4rem; display: block; margin-bottom: 6px; }
+        .cobro-resultado h3 { justify-content: center; }
+        .cobro-resultado .filas { margin: 14px 0; display: flex; flex-direction: column; gap: 6px; }
+        .cobro-resultado .fila { display: flex; justify-content: space-between; background: var(--parchment); border-radius: 8px; padding: 9px 12px; font-weight: 600; }
+        .cobro-resultado .fila.destacada { background: var(--azul); color: #fff; font-size: 1.1rem; font-weight: 800; }
+        .cobro-resultado .aviso { font-size: 0.82rem; color: var(--naranja-deep); font-weight: 600; margin: 0 0 10px; }
+
+        /* ---------- Ventas recientes / anular ---------- */
+        .modal-box.ventas { max-width: 520px; max-height: 85vh; overflow-y: auto; }
+        .venta-card { background: var(--parchment); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 0.85rem; }
+        .venta-card.anulada { opacity: 0.55; }
+        .venta-card .cab { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; }
+        .venta-card .det { color: var(--ink-soft); margin: 4px 0 8px; }
+        .venta-card .pie { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .venta-card .etiqueta-anulada { font-size: 0.75rem; font-weight: 700; color: var(--danger); }
+        .btn-anular {
+            background: var(--danger-bg); color: var(--danger); border: none; border-radius: 8px;
+            padding: 6px 12px; font-weight: 700; font-size: 0.78rem; cursor: pointer;
+        }
+        .btn-anular:hover { background: #f5d4cc; }
+        .btn-anular:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+ 
+    <nav class="topbar">
+        <div class="brand">
+            <div class="brand-mark"><img src="Info.png" alt="Ágape"></div>
+            <div>
+                <h1 class="font-display">Ágape</h1>
+                <p class="subtitulo-marca">Tienda del ministerio</p>
+            </div>
+        </div>
+        <div class="topbar-actions">
+            <div class="status-pill" id="status-pill">
+                <span class="status-dot warn" id="status-dot"></span>
+                <span id="status-text">Conectando...</span>
+            </div>
+            <button class="btn-admin" id="btn-admin-toggle">🔒 Modo inventario</button>
+        </div>
+    </nav>
+ 
+    <main>
+        <section>
+            <div class="banner-offline" id="banner-offline">📡 Sin conexión: se muestra el último inventario guardado. No se pueden procesar ventas hasta que vuelva el internet.</div>
+            <div class="panel-head">
+                <h2>📦 Catálogo de artículos</h2>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span class="pill-soft" id="contador-productos">—</span>
+                    <button class="btn-admin" id="btn-nuevo-producto" style="display:none; background:var(--azul); border-color:var(--azul); color:white;">+ Nuevo artículo</button>
+                    <button class="btn-admin" id="btn-reportes" style="display:none; background:var(--naranja); border-color:var(--naranja); color:white;">📊 Reportes</button>
+                    <button class="btn-admin" id="btn-ventas" style="display:none; background:var(--azul-deep); border-color:var(--azul-deep); color:white;">🧾 Ventas</button>
+                </div>
+            </div>
+ 
+            <div class="search-row">
+                <div class="search-box">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" id="buscador" placeholder="Buscar artículo o código..." autocomplete="off">
+                </div>
+                <button class="btn-scan" id="btn-escanear-venta" title="Escanear código de barras">📷 Escanear</button>
+            </div>
+
+            <div id="categoria-chips"></div>
+ 
+            <div id="grid-productos">
+                <div class="state-card">
+                    <span class="spinner"></span>
+                    <p class="title">Conectando con el inventario...</p>
+                    <p class="sub">Esto solo toma un momento.</p>
+                </div>
+            </div>
+        </section>
+ 
+        <aside class="cart-panel">
+            <h2>🛒 Cuenta actual</h2>
+ 
+            <div id="carrito-items">
+                <div class="cart-empty">
+                    <span class="icon">🛍️</span>
+                    <p style="font-weight:600;">El carrito está vacío.</p>
+                    <p>Toca "Agregar" en cualquier artículo.</p>
+                </div>
+            </div>
+ 
+            <div class="cart-footer">
+                <div class="cart-total-row">
+                    <span>Total a pagar</span>
+                    <span id="cart-total">L. 0.00</span>
+                </div>
+                <button id="btn-pagar" class="btn-pagar" disabled>
+                    💵 Procesar venta
+                </button>
+                <button id="btn-vaciar" class="btn-clear">Vaciar carrito</button>
+            </div>
+        </aside>
+    </main>
+ 
+    <div id="toast-container"></div>
+ 
+    <!-- Modal: pedir contraseña para modo inventario -->
+    <div class="modal-overlay" id="modal-password">
+        <div class="modal-box">
+            <button class="modal-close-x" data-cerrar="modal-password">✕</button>
+            <h3>🔒 Modo inventario</h3>
+            <p class="modal-sub">Inicia sesión con la cuenta de administrador para agregar o ajustar artículos.</p>
+            <div class="modal-error" id="error-password">Correo o contraseña incorrectos.</div>
+            <div class="field-group">
+                <label for="input-email">Correo</label>
+                <input type="email" id="input-email" placeholder="correo@ejemplo.com" autocomplete="username">
+            </div>
+            <div class="field-group">
+                <label for="input-password">Contraseña</label>
+                <input type="password" id="input-password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal ghost" data-cerrar="modal-password">Cancelar</button>
+                <button class="btn-modal primary" id="btn-confirmar-password">Entrar</button>
+            </div>
+        </div>
+    </div>
+ 
+    <!-- Modal: agregar / editar producto -->
+    <div class="modal-overlay" id="modal-producto">
+        <div class="modal-box wide">
+            <button class="modal-close-x" data-cerrar="modal-producto">✕</button>
+            <h3 id="titulo-modal-producto">Nuevo artículo</h3>
+            <p class="modal-sub">Estos datos se guardan directo en el inventario del sistema.</p>
+            <div class="modal-error" id="error-producto"></div>
+            <div class="field-group">
+                <label for="input-nombre">Nombre del artículo</label>
+                <input type="text" id="input-nombre" placeholder="Ej. Llavero metálico">
+            </div>
+            <div class="field-group">
+                <label for="input-precio">Precio (L.)</label>
+                <input type="number" id="input-precio" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="field-group">
+                <label for="input-stock">Cantidad disponible</label>
+                <input type="number" id="input-stock" placeholder="0" step="1" min="0">
+            </div>
+            <div class="field-group">
+                <label for="input-categoria">Categoría</label>
+                <select id="input-categoria"></select>
+            </div>
+            <div class="field-group">
+                <label for="input-codigo-barras">Código de barras (opcional)</label>
+                <div class="codigo-row">
+                    <div class="field-group">
+                        <input type="text" id="input-codigo-barras" placeholder="Ej. AG-K3F8Z1" autocomplete="off">
+                    </div>
+                    <button type="button" class="btn-icon-small" id="btn-generar-codigo" title="Generar código único">🎲 Generar</button>
+                    <button type="button" class="btn-icon-small" id="btn-escanear-codigo-producto" title="Escanear un código ya impreso">📷</button>
+                </div>
+                <div class="etiqueta-preview" id="etiqueta-preview" style="display:none;">
+                    <svg id="svg-etiqueta"></svg>
+                    <div style="margin-top:10px;">
+                        <button type="button" class="btn-modal ghost" id="btn-imprimir-etiqueta" style="flex:none; padding: 8px 18px; font-size:0.82rem;">🖨️ Imprimir etiqueta</button>
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" id="input-id-original">
+            <div class="modal-actions">
+                <button class="btn-modal danger" id="btn-eliminar-producto" style="display:none;">Eliminar</button>
+                <button class="btn-modal primary" id="btn-guardar-producto">Guardar</button>
+            </div>
+        </div>
+    </div>
+ 
+    <!-- Modal: escáner de código de barras (cámara) -->
+    <div class="modal-overlay" id="modal-scanner">
+        <div class="modal-box wide">
+            <button class="modal-close-x" data-cerrar="modal-scanner" id="btn-cerrar-scanner">✕</button>
+            <h3 id="titulo-modal-scanner">📷 Escanear código de barras</h3>
+            <p class="modal-sub" id="subtitulo-modal-scanner">Apunta la cámara al código del producto.</p>
+            <div id="lector-camara"></div>
+            <p class="scanner-status" id="scanner-status"></p>
+            <p class="scanner-hint">Si no ves la imagen de la cámara, revisa los permisos del navegador.</p>
+        </div>
+    </div>
+
+    <!-- Modal: cobro (monto recibido y cambio) -->
+    <div class="modal-overlay" id="modal-cobro">
+        <div class="modal-box">
+            <button class="modal-close-x" data-cerrar="modal-cobro">✕</button>
+
+            <div id="cobro-formulario">
+                <h3>💵 Cobrar venta</h3>
+                <p class="modal-sub">Escribe cuánto te entregan para calcular el cambio (es opcional).</p>
+                <div class="modal-error" id="error-cobro"></div>
+                <div class="cobro-total">
+                    <div class="etiqueta">Total a pagar</div>
+                    <div class="monto" id="cobro-total">L. 0.00</div>
+                </div>
+                <div class="field-group">
+                    <label for="input-recibido">Monto recibido (L.)</label>
+                    <input type="number" id="input-recibido" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+                    <div class="cobro-rapidos" id="cobro-rapidos"></div>
+                </div>
+                <div class="cobro-cambio" id="cobro-cambio">
+                    <span id="cobro-cambio-etiqueta">Cambio</span>
+                    <span class="valor" id="cobro-cambio-valor">L. 0.00</span>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-modal ghost" data-cerrar="modal-cobro">Cancelar</button>
+                    <button class="btn-modal primary" id="btn-confirmar-cobro">Confirmar venta</button>
+                </div>
+            </div>
+
+            <div id="cobro-resultado" class="cobro-resultado" style="display:none;">
+                <span class="icono">✅</span>
+                <h3>Venta registrada</h3>
+                <div class="filas">
+                    <div class="fila"><span>Total</span><span id="res-total">L. 0.00</span></div>
+                    <div class="fila"><span>Recibido</span><span id="res-recibido">—</span></div>
+                    <div class="fila destacada"><span>Cambio</span><span id="res-cambio">—</span></div>
+                </div>
+                <p class="aviso" id="res-aviso" style="display:none;"></p>
+                <div class="modal-actions">
+                    <button class="btn-modal primary" data-cerrar="modal-cobro">Nueva venta</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: ventas recientes (anular) -->
+    <div class="modal-overlay" id="modal-ventas">
+        <div class="modal-box ventas">
+            <button class="modal-close-x" data-cerrar="modal-ventas">✕</button>
+            <h3>🧾 Ventas recientes</h3>
+            <p class="modal-sub">Si te equivocas en una venta, anúlala y las unidades vuelven al inventario.</p>
+            <div id="lista-ventas"><p class="reporte-vacio">Cargando...</p></div>
+        </div>
+    </div>
+
+    <!-- Modal: reportes (exportar inventario, más vendidos, stock bajo) -->
+    <div class="modal-overlay" id="modal-reportes">
+        <div class="modal-box reportes">
+            <button class="modal-close-x" data-cerrar="modal-reportes">✕</button>
+            <h3>📊 Reportes e inventario</h3>
+            <p class="modal-sub">Exporta tu inventario o revisa qué se está vendiendo y qué necesita reposición.</p>
+
+            <div class="reporte-seccion">
+                <button class="btn-exportar" id="btn-exportar-inventario">⬇️ Exportar inventario completo (CSV)</button>
+            </div>
+
+            <hr class="separador-reporte">
+
+            <div class="reporte-seccion">
+                <div class="reporte-titulo">
+                    <span>🔥 Más vendidos</span>
+                    <div class="tabs-periodo">
+                        <button class="tab-periodo" data-periodo="semana">Semana</button>
+                        <button class="tab-periodo" data-periodo="mes">Mes</button>
+                        <button class="tab-periodo" data-periodo="año">Año</button>
+                    </div>
+                </div>
+                <div class="resumen-reporte" id="resumen-reporte"></div>
+                <div class="lista-reporte" id="lista-mas-vendidos">
+                    <p class="reporte-vacio">Cargando...</p>
+                </div>
+            </div>
+
+            <hr class="separador-reporte">
+
+            <div class="reporte-seccion">
+                <div class="reporte-titulo"><span>⚠️ Stock bajo — repón pronto</span></div>
+                <div class="lista-reporte" id="lista-stock-bajo">
+                    <p class="reporte-vacio">Cargando...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
