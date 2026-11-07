@@ -1,0 +1,32 @@
+name: Mantener Supabase Activo
+
+on:
+  schedule:
+    # Lunes y jueves a las 12:00 UTC (6:00 a.m. en Honduras).
+    # Supabase (plan gratis) pausa el proyecto tras 7 días sin actividad.
+    - cron: '0 12 * * 1,4'
+  workflow_dispatch:   # permite ejecutarlo a mano desde la pestaña Actions
+
+permissions:
+  contents: read
+
+jobs:
+  ping_supabase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Hacer ping a la API de Supabase
+        env:
+          SUPABASE_URL: https://hhrpjyofxmyzrdahqutm.supabase.co
+          SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_KEY" ]; then
+            echo "::error::Falta el secreto SUPABASE_ANON_KEY (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          # --fail: si Supabase responde 401, 404 o 500, el job se marca en rojo.
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 --max-time 30 \
+            "$SUPABASE_URL/rest/v1/productos?select=id&limit=1" \
+            -H "apikey: $SUPABASE_KEY" \
+            -o /dev/null
+          echo "Supabase respondió correctamente."
